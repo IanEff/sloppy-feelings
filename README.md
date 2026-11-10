@@ -79,3 +79,47 @@ Each poem is a molecule and each stanza a particle. Springs join stanza pairs, s
 |---|---|---|
 | `trajectories[poem]` | (steps + 1) × stanzas in poem × 2 | `evolve_poem`: one poem alone for `T = 20`, starting as a jittered straight chain. |
 | `system` | (steps + 1) × all stanzas × 2 | `evolve_system`: every poem together for `T = 150`, each starting as a chain at a random spot and angle in a 60 × 60 box. In-poem pairs get full springs. Cross-poem edges of `G` get springs at `ks_inter = 0.5` of their weight. Any two stanzas closer than `sigma = 0.3` push apart with stiffness `ks_rep = 20`. |
+
+### What could drive forces
+
+The simulations use only `n_lines` (mass) and `similarity` (springs) so far. These are the other
+scalars that could become physical properties. The roles are suggestions, not implemented.
+
+Per stanza, as particle properties:
+
+| Column | Range | Possible role |
+|---|---|---|
+| `n_lines` | count ≥ 1 | Mass. Already used. |
+| `n_gaps` | count ≥ 0 | Radius, i.e. a per-stanza `sigma`: whitespace takes up room. |
+| `valence` | 1 to 9 | Signed charge, `valence - 5`. The only clearly two-sided scale here. Like charges repel under Coulomb, so use `-q_i q_j` if moods should clump. |
+| `arousal` | 1 to 9 | Temperature: strength of a random kick each step. |
+| `dominance` | 1 to 9 | Friction, or anchoring: resistance to being pushed. |
+| `concreteness` | 1 to 5 | Friction, or a mass multiplier: concrete is heavy, abstract drifts. |
+| `pron_i`, `pron_you`, `pron_we` | 0 to 1 | Affinities, e.g. attraction proportional to `pron_i[i] * pron_you[j]`. |
+| `emo_<label>` | 0 to 1 | Each is a scalar. Together the 28 are a vector, whose cosine between stanzas could be a second spring stiffness. |
+| `stanza` | 0, 1, 2, ... | Backbone bonds between consecutive stanzas. Today every in-poem pair is bonded alike. |
+| `year` | 2008, ... | An external field along one axis, or springs between poems close in time. |
+| `n_stanzas` | count | A per-poem (molecule) property. |
+
+Per pair, as spring stiffness or rest length:
+
+| Name | Possible role |
+|---|---|
+| `similarity` | Stiffness and rest length. Already used. |
+| `overlap` | A second spring term. Used only in `distance`, for t-SNE. |
+| `novelty` | Already a property of the bond from the previous stanza: its rest length, or its looseness. |
+| `G` weights | Cross-poem springs. Already used. |
+
+Not scalars: `text`, `lemmas`, `book`, `place`, `emotion`, `topic`, `topic_name` and `is_ritual`
+are labels, sets or flags. They could mark species, with same-species pairs attracting, but
+their values aren't magnitudes: topic 7 isn't more than topic 3. `x`, `y`, `fold_*` and
+`system_*` are outputs, so feeding them back in would be circular.
+
+Before using any of these:
+
+- Fill the gaps. The lexicon columns are empty for stanzas with no lexicon hits, `novelty` for
+  each poem's first stanza, and `year` for undated poems.
+- Normalize. Counts, shares, and 1-to-5 and 1-to-9 scales differ widely; z-score or map to
+  0 to 1 so no one property swamps the rest.
+- Keep mass, radius, friction and temperature positive.
+- Expect noise. A short stanza's lexicon mean may rest on two or three words.
