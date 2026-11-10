@@ -1,5 +1,7 @@
 # sloppy-feelings
 
+![FEELINGS: a jeweled python coiled around a retro computer in a starfield](.github/banner.jpg)
+
 ## Run it
 
 You need [uv](https://docs.astral.sh/uv/). It fetches Python 3.15 and every dependency itself.
