@@ -74,6 +74,10 @@ looking each up by lemma first, then by the word itself. The lexicons download i
 Each poem is a molecule and each stanza a particle. Springs join stanza pairs, stiffness from
 `similarity` (negative clipped to zero), rest length `1 - similarity`, mass `n_lines`, friction
 `frictionCoeff = 0.5`, step `dt = 0.05`. The setup follows Klyshko, Example 3.2 and section 5.
+`evolve_system` differs: its in-poem springs keep negative similarity as a push, a backbone bond
+(`ks_bond = 1`, rest length `novelty`) joins consecutive stanzas, every pair attracts by gravity
+`g m_i m_j / r^2` (`g = 1e-3`, softened at `sigma`), and friction is light (`frictionCoeff = 0.02`)
+so the system is still moving at the end.
 
 | Name | Shape | What it holds |
 |---|---|---|

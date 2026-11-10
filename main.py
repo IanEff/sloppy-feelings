@@ -353,11 +353,11 @@ def evolve_system(
     similarity: np.ndarray,
     G: nx.Graph,
     T: float = 150.0,  # s
-    dt: float = 0.05,  # s
-    frictionCoeff: float = 0.5,
+    dt: float = 0.05,  # s; frictionless, energy drifts under 1% over 30 s at this step
+    frictionCoeff: float = 0.02,  # light: the system is still moving at T instead of frozen
     ks_inter: float = 0.5,  # poem-to-poem springs, relative to in-poem ones
     ks_bond: float = 1.0,  # backbone stiffness, each stanza to the previous one
-    g: float = 0.01,  # gravitational constant; n_lines is the mass
+    g: float = 1e-3,  # gravitational constant; n_lines is the mass
     sigma: float = 0.3,  # contact distance: any two stanzas closer than this push apart
     ks_rep: float = 20.0,  # stiffness of that push
     box: float = 60.0,  # side of the square the poems are scattered in
