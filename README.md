@@ -1,9 +1,27 @@
 # sloppy-feelings
 
+## Run it
+
+You need [uv](https://docs.astral.sh/uv/). It fetches Python 3.15 and every dependency itself.
+
+```
+git clone https://github.com/IanEff/sloppy-feelings.git
+cd sloppy-feelings
+uv run python main.py
+```
+
+The first run downloads two models from Hugging Face and two lexicons into `data/lexicons/`.
+With those cached, the whole script takes about a minute on an M-series Mac. It writes
+`out/graph.png` and `out/graph.html`; everything else lives in variables, so for poking at
+`stanzas` or `system`, open `main.py` as a notebook (each `# %%` is a cell) in VS Code, Zed or
+Jupyter with jupytext.
+
+## What it computes
+
 Everything `main.py` extracts from the 207 poems in `data/poems/`, or adds on top of them.
 Listed in the order the code computes it.
 
-## Per line: `lines`
+### Per line: `lines`
 
 | Column | What it holds |
 |---|---|
@@ -13,7 +31,7 @@ Listed in the order the code computes it.
 | `stanza` | Stanza number within the poem. A blank line starts a new stanza; in a double-spaced poem (more than 90% of lines have a blank above), it takes a run of two. |
 | `n_gaps` | Internal gaps: runs of 3+ spaces, or any tab, inside the stripped line. |
 
-## Per stanza: `stanzas`
+### Per stanza: `stanzas`
 
 | Column | Kind | What it holds |
 |---|---|---|
@@ -41,7 +59,7 @@ The lexicon columns average over the stanza's alphabetic, non-stop words found i
 looking each up by lemma first, then by the word itself. The lexicons download into
 `data/lexicons/` on the first run.
 
-## Stanza by stanza: the matrices
+### Stanza by stanza: the matrices
 
 | Name | Shape | What it holds |
 |---|---|---|
@@ -51,7 +69,7 @@ looking each up by lemma first, then by the word itself. The lexicons download i
 | `distance` | stanzas × stanzas | `(1 - similarity) + alpha * overlap` with `alpha = 2.0`, symmetrized, zero diagonal. Input to t-SNE. |
 | `G` | graph | Each stanza joined to its `k = 3` most similar stanzas, dropping pairs below `floor = 0.2`. Edges weighted by similarity. |
 
-## The simulations
+### The simulations
 
 Each poem is a molecule and each stanza a particle. Springs join stanza pairs, stiffness from
 `similarity` (negative clipped to zero), rest length `1 - similarity`, mass `n_lines`, friction
