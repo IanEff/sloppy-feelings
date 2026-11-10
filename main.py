@@ -246,7 +246,7 @@ topics[["Topic", "Count", "Name"]]
 alpha = 2.0
 
 distance = (1 - similarity) + alpha * overlap
-distance = np.clip((distance + distance.T) / 2, 0, None) # TODO: Added clip so non-negative
+distance = np.clip((distance + distance.T) / 2, 0, None)  # TODO: Added clip so non-negative
 np.fill_diagonal(distance, 0)
 
 pos = TSNE(metric="precomputed", init="random", random_state=42).fit_transform(distance)
@@ -345,8 +345,9 @@ stanzas.head()
 
 # %%
 # The whole system in one box. As in Klyshko's section 5, forces are bonded (springs between
-# stanzas of the same poem) or non-bonded (springs along G's cross-poem edges, plus a
-# short-range push so two molecules can't pass through each other).
+# stanzas of the same poem, plus a backbone along each poem's stanza order) or non-bonded
+# (springs along G's cross-poem edges, gravity between every pair, plus a short-range push so
+# two molecules can't pass through each other).
 def evolve_system(
     stanzas: pd.DataFrame,
     similarity: np.ndarray,
@@ -355,6 +356,8 @@ def evolve_system(
     dt: float = 0.05,  # s
     frictionCoeff: float = 0.5,
     ks_inter: float = 0.5,  # poem-to-poem springs, relative to in-poem ones
+    ks_bond: float = 1.0,  # backbone stiffness, each stanza to the previous one
+    g: float = 0.01,  # gravitational constant; n_lines is the mass
     sigma: float = 0.3,  # contact distance: any two stanzas closer than this push apart
     ks_rep: float = 20.0,  # stiffness of that push
     box: float = 60.0,  # side of the square the poems are scattered in
@@ -367,14 +370,27 @@ def evolve_system(
     poem = stanzas["poem"].to_numpy()
     same_poem = poem[:, None] == poem[None, :]
 
-    # bonded: every pair of stanzas in a poem. non-bonded: G's cross-poem edges.
-    ks = np.where(same_poem, np.clip(similarity, 0, None), 0.0)
+    # bonded: every pair of stanzas in a poem. Signed, so a negative similarity is an
+    # anti-spring that pushes the pair apart. non-bonded: G's cross-poem edges.
+    ks = np.where(same_poem, similarity, 0.0)
     for i, j in G.edges:
         if not same_poem[i, j]:
             ks[i, j] = ks[j, i] = ks_inter * G.edges[i, j]["weight"]
     np.fill_diagonal(ks, 0)
     r0 = 1 - similarity
+
+    # backbone: each stanza bonds to the previous one at rest length novelty. Rows are sorted
+    # by poem then stanza, and only each poem's first stanza lacks a novelty, so i - 1 is
+    # always the previous stanza of the same poem. novelty is already 1 - similarity there;
+    # setting r0 just makes the bond's length explicit.
+    novelty = stanzas["novelty"].to_numpy()
+    i = np.flatnonzero(~np.isnan(novelty))
+    ks[i, i - 1] += ks_bond
+    ks[i - 1, i] += ks_bond
+    r0[i, i - 1] = r0[i - 1, i] = novelty[i]
+
     m = stanzas["n_lines"].to_numpy(float)[:, None]
+    gm = g * m * m.T  # gravity between i and j is g m_i m_j / r^2
 
     N = int(T / dt)
 
@@ -397,7 +413,9 @@ def evolve_system(
         # The tutorial's i, j double loop, for every pair at once: rij[i, j] = r_i - r_j.
         rij = r[n][:, None, :] - r[n][None, :, :]
         rij_abs = np.maximum(np.linalg.norm(rij, axis=-1), 1e-9)  # no 0/0 when i == j
-        stretch = ks * (rij_abs - r0) - ks_rep * np.clip(sigma - rij_abs, 0, None)
+        # Gravity is softened at sigma (Plummer) so it can't blow up as two stanzas meet.
+        gravity = gm * rij_abs / (rij_abs**2 + sigma**2) ** 1.5
+        stretch = ks * (rij_abs - r0) - ks_rep * np.clip(sigma - rij_abs, 0, None) + gravity
         f[n] = -(stretch[..., None] * rij / rij_abs[..., None]).sum(axis=1)
         f[n] -= frictionCoeff * m * v[n]
 
