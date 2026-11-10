@@ -1,0 +1,35 @@
+[project]
+name = "sloppy-feelings"
+version = "0.1.0"
+description = "A vector rendering of tenderness"
+readme = "README.md"
+authors = [{ name = "Ian Furst", email = "ian.furst@gmail.com" }]
+requires-python = ">=3.15"
+dependencies = [
+    "bertopic",
+    "en-core-web-sm",
+    "kaleido>=1.5.0",
+    "networkx>=3.7",
+    "numpy>=2.5.4",
+    "pandas>=3.1.1",
+    "plotly>=7.1.0",
+    "scikit-learn>=1.9.1",
+    "sentence-transformers>=6.2.0",
+    "spacy>=3.8.18",
+    "torch>=2.15.0",
+    "transformers>=5.22.2",
+]
+
+[tool.uv]
+package = false
+
+# Linux gets CPU-only torch: PyPI's Linux wheel pulls ~3 GB of CUDA.
+# macOS keeps PyPI's wheel, which is CPU/MPS already.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -1,0 +1,8 @@
+__pycache__/
+.venv/
+.DS_Store
+*.ipynb
+.ipynb_checkpoints/
+# main.py writes these on each run.
+data/lexicons/
+out/
