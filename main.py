@@ -33,6 +33,8 @@ from sklearn.manifold import TSNE
 from transformers import pipeline
 from umap import UMAP
 
+from visualize_system import write_system_html
+
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
@@ -244,7 +246,7 @@ topics[["Topic", "Count", "Name"]]
 alpha = 2.0
 
 distance = (1 - similarity) + alpha * overlap
-distance = (distance + distance.T) / 2
+distance = np.clip((distance + distance.T) / 2, 0, None) # TODO: Added clip so non-negative
 np.fill_diagonal(distance, 0)
 
 pos = TSNE(metric="precomputed", init="random", random_state=42).fit_transform(distance)
@@ -413,4 +415,5 @@ system: np.ndarray = evolve_system(stanzas, similarity, G)
 
 # ENRICHMENT (dynamics): where each stanza settled with every poem in the box together.
 stanzas[["system_x", "system_y"]] = system[-1]
+write_system_html(system, stanzas, out_dir / "system.html")
 stanzas.head()
